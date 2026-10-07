@@ -15,6 +15,7 @@
             --accent-orange: #f59e0b;
             --accent-purple: #8b5cf6;
             --accent-red: #ef4444;
+            --tech-grey: #64748b; /* Farba Sivá Tech pre pásik */
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
             --border-color: #334155;
@@ -37,11 +38,26 @@
         .car-card {
             background-color: var(--card-bg);
             border-radius: 16px;
-            padding: 15px;
-            text-align: center;
+            overflow: hidden; /* Zabezpečí, že pásik pekne kopíruje okraje */
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             border: 1px solid var(--border-color);
             margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Štýl pre horný farebný pásik vo farbe Sivá Tech */
+        .car-accent-bar {
+            background-color: var(--tech-grey);
+            color: #ffffff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 6px;
+        }
+
+        .car-content {
+            padding: 15px;
         }
 
         .car-image {
@@ -213,11 +229,14 @@
 <body>
 
 <div class="container">
-    <!-- Karta auta -->
+    <!-- Karta auta s farebným pásikom Sivá Tech -->
     <div class="car-card">
-        <img src="chery.jpg" alt="Chery Tiggo 7 PHEV" class="car-image">
-        <div class="car-title">Chery Tiggo 7 PHEV</div>
-        <div class="car-subtitle">Plug-in Hybrid • Šedá Tech</div>
+        <div class="car-accent-bar">Chery Tiggo 7 PHEV • Šedá Tech</div>
+        <div class="car-content">
+            <img src="chery.jpg" alt="Chery Tiggo 7 PHEV" class="car-image">
+            <div class="car-title">Chery Tiggo 7 PHEV</div>
+            <div class="car-subtitle">Plug-in Hybrid</div>
+        </div>
     </div>
 
     <!-- Servisné upozornenia -->
@@ -434,7 +453,6 @@
             tbody.innerHTML += row;
         });
 
-        // Štatistiky na km a spotreby
         if (logs.length > 1) {
             const minKm = logs[0].odometer;
             const maxKm = currentKm;
@@ -458,6 +476,101 @@
             document.getElementById('avg-cost').innerText = '0.00 €/km';
         }
 
-        // Servisné upozornenie (napr. výmena oleja každých 15 000 km)
         const alertsDiv = document.getElementById('service-alerts');
         if (lastServiceKm > 0) {
+            const kmSinceService = currentKm - lastServiceKm;
+            const kmToNext = 15000 - kmSinceService;
+            if (kmToNext <= 1000) {
+                alertsDiv.innerHTML = `<div class="alert-box">⚠️ <strong>Upozornenie na servis:</strong> Do ďalšej pravidelnej prehliadky vám zostáva už len cca ${kmToNext} km!</div>`;
+            } else {
+                alertsDiv.innerHTML = `<div class="alert-box ok">✅ Servisný stav: Do ďalšej výmeny oleja zostáva ${kmToNext} km.</div>`;
+            }
+        } else {
+            alertsDiv.innerHTML = `<div class="alert-box" style="background:rgba(59,130,246,0.1); border-color:var(--accent-blue);">💡 Tip: Zadajte aspoň jeden záznam "Pravidelný servis" pre aktiváciu sledovania intervalov.</div>`;
+        }
+
+        renderCharts();
+    }
+
+    let costChart, categoryChart;
+    function renderCharts() {
+        const ctx1 = document.getElementById('costChart').getContext('2d');
+        if (costChart) costChart.destroy();
+
+        costChart = new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: logs.map(l => l.odometer + ' km'),
+                datasets: [{
+                    label: 'Cena (€)',
+                    data: logs.map(l => l.cost),
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: { scales: { y: { beginAtZero: true } } }
+        });
+
+        let catTotals = { 'Nabíjanie': 0, 'Benzín': 0, 'Servis': 0, 'Poistenie': 0, 'Ostatné': 0 };
+        logs.forEach(l => {
+            if(l.type === 'charging') catTotals['Nabíjanie'] += l.cost;
+            else if(l.type === 'fuel') catTotals['Benzín'] += l.cost;
+            else if(l.type.startsWith('service_')) catTotals['Servis'] += l.cost;
+            else if(l.type === 'insurance') catTotals['Poistenie'] += l.cost;
+            else catTotals['Ostatné'] += l.cost;
+        });
+
+        const ctx2 = document.getElementById('categoryChart').getContext('2d');
+        if (categoryChart) categoryChart.destroy();
+
+        categoryChart = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(catTotals),
+                datasets: [{
+                    data: Object.values(catTotals),
+                    backgroundColor: ['#3b82f6', '#f59e0b', '#8b5cf6', '#10b981', '#64748b']
+                }]
+            }
+        });
+    }
+
+    function exportData() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(logs));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "chery_phev_backup.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedLogs = JSON.parse(e.target.result);
+                if (Array.isArray(importedLogs)) {
+                    logs = importedLogs;
+                    localStorage.setItem('phev_logs', JSON.stringify(logs));
+                    updateUI();
+                    alert('Dáta boli úspešne obnovené zo zálohy!');
+                } else {
+                    alert('Neplatný formát zálohy.');
+                }
+            } catch (err) {
+                alert('Chyba pri čítaní súboru.');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    toggleInputs();
+    updateUI();
+</script>
+</body>
+</html>
