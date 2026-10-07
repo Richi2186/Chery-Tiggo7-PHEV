@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang=“sk“>
+<head>
+    <meta charset=“UTF-8“>
+    <meta name=“viewport“ content=“width=device-width, initial-scale=1.0“>
+    <title>Chery Tiggo 7 PHEV – Štatistiky</title>
+    <!—Chart.js pre grafy 
+    <script src=https://cdn.jsdelivr.net/npm/chart.js></script>
+    <style>
+        :root {
+            --bg-color: #121824;
+            --card-bg: #1e293b;
+            --accent-green: #10b981;
+            --accent-blue: #3b82f6;
+            --accent-orange: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+        }
+
+        Body {
+            Font-family: -apple-system, BlinkMacSystemFont, „Segoe UI“, Roboto, sans-serif;
+            Background-color: var(--bg-color);
+            Color: var(--text-main);
+            Margin: 0;
+            Padding: 15px;
+            Padding-bottom: 40px;
+        }
+
+        .container {
+            Max-width: 600px;
+            Margin: 0 auto;
+        }
+
+        .header {
+            Text-align: center;
+            Margin-bottom: 20px;
+        }
+
+        .car-card {
+            Background-color: var(--card-bg);
+            Border-radius: 16px;
+            Padding: 15px;
+            Text-align: center;
+            Box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            Border: 1px solid var(--border-color);
+            Margin-bottom: 20px;
+        }
+
+        .car-image {
+            Width: 100%;
+            Max-height: 200px;
+            Object-fit: contain;
+            Border-radius: 12px;
+            Margin-bottom: 10px;
+        }
+
+        .car-title {
+            Font-size: 1.4rem;
+            Font-weight: bold;
+            Margin: 5px 0;
+        }
+
+        .car-subtitle {
+            Color: var(--text-muted);
+            Font-size: 0.9rem;
+        }
+
+        .stats-grid {
+            Display: grid;
+            Grid-template-columns: repeat(2, 1fr);
+            Gap: 12px;
+            Margin-bottom: 20px;
+        }
+
+        .stat-card {
+            Background: var(--card-bg);
+            Padding: 15px;
+            Border-radius: 12px;
+            Border: 1px solid var(--border-color);
+        }
+
+        .stat-card h4 {
+            Margin: 0;
+            Color: var(--text-muted);
+            Font-size: 0.8rem;
+            Text-transform: uppercase;
+        }
+
+        .stat-card .value {
+            Font-size: 1.3rem;
+            Font-weight: bold;
+            Margin-top: 5px;
+            Color: var(--accent-green);
+        }
+
+        .form-card {
+            Background: var(--card-bg);
+            Padding: 20px;
+            Border-radius: 16px;
+            Border: 1px solid var(--border-color);
+            Margin-bottom: 20px;
+        }
+
+        .form-group {
+            Margin-bottom: 15px;
+        }
+
+        Label {
+            Display: block;
+            Font-size: 0.85rem;
+            Color: var(--text-muted);
+            Margin-bottom: 5px;
+        }
+
+        Input, select {
+            Width: 100%;
+            Padding: 12px;
+            Background: #0f172a;
+            Border: 1px solid var(--border-color);
+            Border-radius: 8px;
+            Color: white;
+            Font-size: 1rem;
+            Box-sizing: border-box;
+        }
+
+        Button {
+            Width: 100%;
+            Padding: 14px;
+            Background: var(--accent-green);
+            Color: white;
+            Border: none;
+            Border-radius: 10px;
+            Font-weight: bold;
+            Font-size: 1rem;
+            Cursor: pointer;
+        }
+
+        .chart-card {
+            Background: var(--card-bg);
+            Padding: 15px;
+            Border-radius: 16px;
+            Border: 1px solid var(--border-color);
+            Margin-bottom: 20px;
+        }
+
+        Table {
+            Width: 100%;
+            Border-collapse: collapse;
+            Margin-top: 10px;
+            Font-size: 0.85rem;
+        }
+
+        Th, td {
+            Padding: 10px;
+            Text-align: left;
+            Border-bottom: 1px solid var(--border-color);
+        }
+
+        Th {
+            Color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+<div class=“container“>
+    <div class=“car-card“>
+        <!—Ilustračný obrázok Chery Tiggo 7 PHEV 
+        <img src=https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=600&q=80 alt=“Chery Tiggo 7 PHEV“ class=“car-image“>
+        <div class=“car-title“>Chery Tiggo 7 PHEV</div>
+        <div class=“car-subtitle“>Farba: Sivá Tech (Technical Grey)</div>
+    </div>
+
+    <!—Štatistiky 
+    <div class=“stats-grid“>
+        <div class=“stat-card“>
+            <h4>Priem. Náklad</h4>
+            <div class=“value“ id=“avg-cost“>0.00 €/km</div>
+        </div>
+        <div class=“stat-card“>
+            <h4>Celkovo km</h4>
+            <div class=“value“ id=“total-km“>0 km</div>
+        </div>
+        <div class=“stat-card“>
+            <h4>Palivo (Spotreba)</h4>
+            <div class=“value“ id=“avg-fuel“ style=“color: var(--accent-orange);“>0.0 l/100km</div>
+        </div>
+        <div class=“stat-card“>
+            <h4>Elektrina (Spotreba)</h4>
+            <div class=“value“ id=“avg-elec“ style=“color: var(--accent-blue);“>0.0 kWh/100km</div>
+        </div>
+    </div>
+
+    <!—Formulár na zadávanie 
+    <div class=“form-card“>
+        <h3>Nový záznam</h3>
+        <form id=“log-form“>
+            <div class=“form-group“>
+                <label>Typ udalosti</label>
+                <select id=“type“ onchange=“toggleInputs()“>
+                    <option value=“charging“>Nabíjanie (Elektrina)</option>
+                    <option value=“fuel“>Tankovanie (Benzín)</option>
+                </select>
+            </div>
+            <div class=“form-group“>
+                <label>Stav tachometra (km)</label>
+                <input type=“number“ id=“odometer“ required placeholder=“napr. 12500“>
+            </div>
+            <div class=“form-group“ id=“amount-group“>
+                <label id=“amount-label“>Množstvo (kWh)</label>
+                <input type=“number“ step=“0.01“ id=“amount“ required placeholder=“napr. 13.5“>
+            </div>
+            <div class=“form-group“>
+                <label>Cena celkom (€)</label>
+                <input type=“number“ step=“0.01“ id=“cost“ required placeholder=“napr. 2.50“>
+            </div>
+            <button type=“submit“>Uložiť záznam</button>
+        </form>
+    </div>
+
+    <!—Graf 
+    <div class=“chart-card“>
+        <h3>Vývoj nákladov (€)</h3>
+        <canvas id=“costChart“></canvas>
+    </div>
+
+    <!—História 
+    <div class=“form-card“>
+        <h3>História tankovania a nabíjania</h3>
+        <div style=“overflow-x:auto;“>
+            <table id=“history-table“>
+                <thead>
+                    <tr>
+                        <th>KM</th>
+                        <th>Typ</th>
+                        <th>Množstvo</th>
+                        <th>Cena</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    Let logs = JSON.parse(localStorage.getItem(‚phev_logs‘)) || [];
+
+    Function toggleInputs() {
+        Const type = document.getElementById(‚type‘).value;
+        Const label = document.getElementById(‚amount-label‘);
+        Label.innerText = type === ‚charging‘ ? ‚Množstvo (kWh)‘ : ‚Množstvo (Litre)‘;
+    }
+
+    Document.getElementById(‚log-form‘).addEventListener(‚submit‘, function(e) {
+        e.preventDefault();
+        const newLog = {
+            id: Date.now(),
+            type: document.getElementById(‚type‘).value,
+            odometer: parseFloat(document.getElementById(‚odometer‘).value),
+            amount: parseFloat(document.getElementById(‚amount‘).value),
+            cost: parseFloat(document.getElementById(‚cost‘).value),
+            date: new Date().toLocaleDateString(‚sk-SK‘)
+        };
+
+        Logs.push(newLog);
+        Logs.sort((a, b) => a.odometer – b.odometer);
+        localStorage.setItem(‚phev_logs‘, JSON.stringify(logs));
+        
+        this.reset();
+        updateUI();
+    });
+
+    Function updateUI() {
+        Const tbody = document.querySelector(‚#history-table tbody‘);
+        Tbody.innerHTML = ‚‘;
+
+        Let totalCost = 0;
+        Let totalFuel = 0;
+        Let totalElec = 0;
+
+        Logs.forEach(log => {
+            totalCost += log.cost;
+            if(log.type === ‚fuel‘) totalFuel += log.amount;
+            if(log.type === ‚charging‘) totalElec += log.amount;
+
+            const row = `<tr>
+                <td>${log.odometer} km</td>
+                <td>${log.type === ‚charging‘ ? ‚⚡ Nabíjanie‘ : ‚⛽ Benzín‘}</td>
+                <td>${log.amount} ${log.type === ‚charging‘ ? ‚kWh‘ : ‚L‘}</td>
+                <td>${log.cost.toFixed(2)} €</td>
+            </tr>`;
+            Tbody.innerHTML += row;
+        });
+
+        If (logs.length > 1) {
+            Const minKm = logs[0].odometer;
+            Const maxKm = logs[logs.length – 1].odometer;
+            Const dist = maxKm – minKm;
+
+            Document.getElementById(‚total-km‘).innerText = dist + ‚ km‘;
+            If(dist > 0) {
+                Document.getElementById(‚avg-cost‘).innerText = (totalCost / dist).toFixed(3) + ‚ €/km‘;
+                Document.getElementById(‚avg-fuel‘).innerText = ((totalFuel / dist) * 100).toFixed(1) + ‚ l/100km‘;
+                Document.getElementById(‚avg-elec‘).innerText = ((totalElec / dist) * 100).toFixed(1) + ‚ kWh/100km‘;
+            }
+        }
+
+        renderChart();
+    }
+
+    Let chart;
+    Function renderChart() {
+        Const ctx = document.getElementById(‚costChart‘).getContext(‚2d‘);
+        If (chart) chart.destroy();
+
+        Chart = new Chart(ctx, {
+            Type: ‚line‘,
+            Data: {
+                Labels: logs.map(l => l.odometer + ‚ km‘),
+                Datasets: [{
+                    Label: ‚Cena (€)‘,
+                    Data: logs.map(l => l.cost),
+                    borderColor: ‚#10b981‘,
+                    backgroundColor: ‚rgba(16, 185, 129, 0.2)‘,
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            Options: {
+                Scales: {
+                    Y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    updateUI();
+</script>
+</body>
+</html>
