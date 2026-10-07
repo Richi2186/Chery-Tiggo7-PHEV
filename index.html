@@ -13,6 +13,7 @@
             --accent-green: #10b981;
             --accent-blue: #3b82f6;
             --accent-orange: #f59e0b;
+            --accent-purple: #8b5cf6;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
             --border-color: #334155;
@@ -166,7 +167,7 @@
 
 <div class="container">
     <div class="car-card">
-        <!-- Váš reálny obrázok auta z repozitára -->
+        <!-- Obrázok Chery Tiggo 7 PHEV -->
         <img src="chery.jpg" alt="Chery Tiggo 7 PHEV" class="car-image">
         <div class="car-title">Chery Tiggo 7 PHEV</div>
         <div class="car-subtitle">Farba: Sivá Tech (Technical Grey)</div>
@@ -175,7 +176,7 @@
     <!-- Štatistiky -->
     <div class="stats-grid">
         <div class="stat-card">
-            <h4>Priem. Náklad</h4>
+            <h4>Celkové Náklady/km</h4>
             <div class="value" id="avg-cost">0.00 €/km</div>
         </div>
         <div class="stat-card">
@@ -197,10 +198,16 @@
         <h3>Nový záznam</h3>
         <form id="log-form">
             <div class="form-group">
-               <label>Typ udalosti</label>
+               <label>Typ udalosti / nákladu</label>
                <select id="type" onchange="toggleInputs()">
                    <option value="charging">Nabíjanie (Elektrina)</option>
                    <option value="fuel">Tankovanie (Benzín)</option>
+                   <option value="service_regular">Pravidelný servis (Garančka/Olej)</option>
+                   <option value="service_repair">Oprava / Neplánovaný servis</option>
+                   <option value="service_stk">STK / Emisie / Kontroly</option>
+                   <option value="insurance">Poistenie (PZP / Kasko)</option>
+                   <option value="tires">Pneumatiky / Príslušenstvo</option>
+                   <option value="other">Iný náklad / Umývačka</option>
                </select>
             </div>
             <div class="form-group">
@@ -209,7 +216,7 @@
             </div>
             <div class="form-group" id="amount-group">
                <label id="amount-label">Množstvo (kWh)</label>
-               <input type="number" step="0.01" id="amount" required placeholder="napr. 13.5">
+               <input type="number" step="0.01" id="amount" placeholder="napr. 13.5">
             </div>
             <div class="form-group">
                <label>Cena celkom (€)</label>
@@ -227,7 +234,7 @@
 
     <!-- História -->
     <div class="form-card">
-        <h3>História tankovania a nabíjania</h3>
+        <h3>História nákladov a úkonov</h3>
         <div style="overflow-x:auto;">
             <table id="history-table">
                 <thead>
@@ -249,17 +256,32 @@
 
     function toggleInputs() {
         const type = document.getElementById('type').value;
+        const amountGroup = document.getElementById('amount-group');
         const label = document.getElementById('amount-label');
-        label.innerText = type === 'charging' ? 'Množstvo (kWh)' : 'Množstvo (Litre)';
+        const amountInput = document.getElementById('amount');
+
+        // Ak ide o servis, poistenie alebo umývačku, množstvo nie je potrebné
+        if (type.startsWith('service_') || type === 'insurance' || type === 'tires' || type === 'other') {
+            amountGroup.style.display = 'none';
+            amountInput.required = false;
+            amountInput.value = '';
+        } else {
+            amountGroup.style.display = 'block';
+            amountInput.required = true;
+            label.innerText = type === 'charging' ? 'Množstvo (kWh)' : 'Množstvo (Litre)';
+        }
     }
 
     document.getElementById('log-form').addEventListener('submit', function(e) {
         e.preventDefault();
+        const typeVal = document.getElementById('type').value;
+        const amountVal = document.getElementById('amount').value;
+
         const newLog = {
             id: Date.now(),
-            type: document.getElementById('type').value,
+            type: typeVal,
             odometer: parseFloat(document.getElementById('odometer').value),
-            amount: parseFloat(document.getElementById('amount').value),
+            amount: amountVal ? parseFloat(amountVal) : 0,
             cost: parseFloat(document.getElementById('cost').value),
             date: new Date().toLocaleDateString('sk-SK')
         };
@@ -269,8 +291,23 @@
         localStorage.setItem('phev_logs', JSON.stringify(logs));
         
         this.reset();
+        toggleInputs();
         updateUI();
     });
+
+    function getTypeName(type) {
+        switch(type) {
+            case 'charging': return '⚡ Nabíjanie';
+            case 'fuel': return '⛽ Benzín';
+            case 'service_regular': return '🛠️ Pravidelný servis';
+            case 'service_repair': return '🔧 Oprava / Servis';
+            case 'service_stk': return '📋 STK / Emisie';
+            case 'insurance': return '📄 Poistenie';
+            case 'tires': return '🛞 Pneumatiky';
+            case 'other': return '✨ Iný výdavok';
+            default: return type;
+        }
+    }
 
     function updateUI() {
         const tbody = document.querySelector('#history-table tbody');
@@ -285,10 +322,12 @@
             if(log.type === 'fuel') totalFuel += log.amount;
             if(log.type === 'charging') totalElec += log.amount;
 
+            let amountText = log.amount > 0 ? `${log.amount} ${log.type === 'charging' ? 'kWh' : 'L'}` : '-';
+
             const row = `<tr>
                <td>${log.odometer} km</td>
-               <td>${log.type === 'charging' ? '⚡ Nabíjanie' : '⛽ Benzín'}</td>
-               <td>${log.amount} ${log.type === 'charging' ? 'kWh' : 'L'}</td>
+               <td>${getTypeName(log.type)}</td>
+               <td>${amountText}</td>
                <td>${log.cost.toFixed(2)} €</td>
             </tr>`;
             tbody.innerHTML += row;
@@ -305,6 +344,9 @@
                 document.getElementById('avg-fuel').innerText = ((totalFuel / dist) * 100).toFixed(1) + ' l/100km';
                 document.getElementById('avg-elec').innerText = ((totalElec / dist) * 100).toFixed(1) + ' kWh/100km';
             }
+        } else {
+            document.getElementById('total-km').innerText = '0 km';
+            document.getElementById('avg-cost').innerText = '0.00 €/km';
         }
 
         renderChart();
@@ -320,5 +362,25 @@
             data: {
                 labels: logs.map(l => l.odometer + ' km'),
                 datasets: [{
-                    label: 'Cena (€)',
-                    data: logs.map(l
+                    label: 'Celková cena úkonu (€)',
+                    data: logs.map(l => l.cost),
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    // Inicializácia pri štarte
+    toggleInputs();
+    updateUI();
+</script>
+</body>
+</html>
